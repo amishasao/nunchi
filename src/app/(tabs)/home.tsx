@@ -18,7 +18,9 @@ import { PrimaryButton } from '@/components/primary-button';
 import { SettingsOverlay } from '@/components/settings-overlay';
 import { TipOverlay } from '@/components/tip-overlay';
 import { Colors, Fonts, Shadow, Type } from '@/constants/theme';
-import { dayLabels, moodLabels, mockUser, recommendedTips, weeklyMoodGrid, type Tip } from '@/data/mock';
+import { dayLabels, moodLabels, recommendedTips, weeklyMoodGrid, type Tip } from '@/data/mock';
+import { firstName, formatWhen } from '@/lib/format';
+import { useSessionStore } from '@/store/session-store';
 
 const cellColors = [Colors.ink, Colors.slate, Colors.mint];
 
@@ -29,6 +31,8 @@ const cardGradients: { colors: [string, string, ...string[]]; locations?: [numbe
 ];
 
 export default function HomeScreen() {
+  const name = useSessionStore((s) => (s.profile ? firstName(s.profile.name) : ''));
+  const lastActivity = useSessionStore((s) => s.history[0] ?? null);
   const [selectedTip, setSelectedTip] = useState<Tip | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showScrollBtn, setShowScrollBtn] = useState(true);
@@ -44,7 +48,9 @@ export default function HomeScreen() {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.headerRow}>
-        <Text style={styles.nextInteraction}>Next Interaction: {mockUser.nextInteraction}</Text>
+        <Text style={styles.nextInteraction}>
+          {lastActivity ? `Last Interaction: ${formatWhen(lastActivity.startTime)}` : 'No interactions yet'}
+        </Text>
         <Pressable accessibilityRole="button" accessibilityLabel="Settings" onPress={() => setShowSettings(true)}>
           <SettingsHeartIcon />
         </Pressable>
@@ -53,7 +59,7 @@ export default function HomeScreen() {
       <View style={styles.welcomeCard}>
         <Image source={require('@/assets/images/welcome.jpg')} style={StyleSheet.absoluteFill} contentFit="cover" />
         <View style={styles.welcomeShade} />
-        <Text style={styles.welcomeText}>Welcome {mockUser.firstName}</Text>
+        <Text style={styles.welcomeText}>Welcome {name}</Text>
       </View>
 
       <View style={styles.section}>

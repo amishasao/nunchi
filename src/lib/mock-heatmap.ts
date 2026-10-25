@@ -40,6 +40,12 @@ export function driftGrid(grid: HeatCell[][]): HeatCell[][] {
   );
 }
 
+// Mean heat across the whole grid, sampled into the session's heat timeline.
+export function averageHeat(grid: HeatCell[][]): number {
+  const cells = grid.flat();
+  return cells.reduce((sum, cell) => sum + cell.value, 0) / cells.length;
+}
+
 export function generateInsights(grid: HeatCell[][], participants: string[]): string[] {
   const intensity: Record<number, number[]> = {};
   grid.forEach((row) =>

@@ -5,7 +5,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ActivityIcon, HeatIcon, HomeIcon, ProfileIcon } from '@/components/icons';
 import { Colors, Fonts } from '@/constants/theme';
-import { mockUser } from '@/data/mock';
+import { firstName } from '@/lib/format';
+import { useSessionStore } from '@/store/session-store';
 
 type NavItem = {
   label: string;
@@ -18,21 +19,24 @@ const navItems: NavItem[] = [
   { label: 'Home', href: '/home', Icon: HomeIcon, isActive: (p) => p === '/home' },
   { label: 'Heat', href: '/heatmap', Icon: HeatIcon, isActive: (p) => p.startsWith('/heatmap') },
   { label: 'Activity', href: '/activity', Icon: ActivityIcon, isActive: (p) => p === '/activity' },
-  { label: mockUser.firstName, href: '/profile', Icon: ProfileIcon, isActive: (p) => p === '/profile' },
+  { label: 'Profile', href: '/profile', Icon: ProfileIcon, isActive: (p) => p === '/profile' },
 ];
 
 export function BottomNav() {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
+  const name = useSessionStore((s) => (s.profile ? firstName(s.profile.name) : ''));
 
   return (
     <View style={[styles.nav, { paddingBottom: Math.max(insets.bottom, 24) }]}>
-      {navItems.map(({ label, href, Icon, isActive }) => {
+      {navItems.map(({ label: defaultLabel, href, Icon, isActive }) => {
+        // The profile tab is labelled with the user's first name.
+        const label = href === '/profile' && name ? name : defaultLabel;
         const active = isActive(pathname);
         const color = active ? Colors.ink : Colors.muted;
         return (
           <Pressable
-            key={label}
+            key={defaultLabel}
             accessibilityRole="tab"
             accessibilityState={{ selected: active }}
             onPress={() => router.navigate(href)}

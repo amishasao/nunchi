@@ -1,10 +1,10 @@
-import { Image } from 'expo-image';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { AvatarIcon } from '@/components/icons';
 import { Colors, Fonts, Type, heatColor } from '@/constants/theme';
-import { mockInteractions, mockUser } from '@/data/mock';
+import { formatDuration, formatWhen } from '@/lib/format';
+import { useSessionStore } from '@/store/session-store';
 
 function MiniHeatBar({ values }: { values: number[] }) {
   return (
@@ -24,8 +24,18 @@ function MiniHeatBar({ values }: { values: number[] }) {
   );
 }
 
+function Initials({ name }: { name: string }) {
+  return (
+    <View style={styles.participantAvatar} accessibilityLabel={name}>
+      <Text style={styles.initials}>{name.trim().charAt(0).toUpperCase()}</Text>
+    </View>
+  );
+}
+
 export default function ProfileScreen() {
-  const [expanded, setExpanded] = useState<number | null>(null);
+  const profile = useSessionStore((s) => s.profile);
+  const history = useSessionStore((s) => s.history);
+  const [expanded, setExpanded] = useState<string | null>(null);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -39,32 +49,39 @@ export default function ProfileScreen() {
       </View>
 
       <View style={styles.info}>
-        <Text style={[Type.h1, styles.name]}>{mockUser.fullName}</Text>
-        <Text style={styles.role}>{mockUser.title}</Text>
+        <Text style={[Type.h1, styles.name]}>{profile?.name}</Text>
+        <Text style={styles.role}>Nunchi Practitioner</Text>
       </View>
 
       <View style={styles.list}>
-        <Text style={[Type.h2, styles.listTitle]}>Interactions today</Text>
-        {mockInteractions.map((interaction, index) => (
+        <Text style={[Type.h2, styles.listTitle]}>Recent interactions</Text>
+        {history.length === 0 && (
+          <Text style={styles.empty}>Interactions you finish will show up here.</Text>
+        )}
+        {history.map((interaction) => (
           <Pressable
-            key={interaction.title}
+            key={interaction.id}
             accessibilityRole="button"
-            accessibilityState={{ expanded: expanded === index }}
-            onPress={() => setExpanded(expanded === index ? null : index)}
+            accessibilityState={{ expanded: expanded === interaction.id }}
+            onPress={() => setExpanded(expanded === interaction.id ? null : interaction.id)}
             style={styles.card}>
             <View style={styles.cardHeader}>
-              <Text style={styles.cardTitle}>{interaction.title}</Text>
-              <View style={styles.cardParticipants}>
-                <Text style={styles.small}>Participants:</Text>
-                {interaction.avatars.map((avatar, ai) => (
-                  <Image
-                    key={ai}
-                    source={avatar}
-                    style={styles.participantAvatar}
-                    accessibilityLabel={interaction.participants[ai]}
-                  />
-                ))}
+              <View style={styles.cardHeading}>
+                <Text style={styles.cardTitle} numberOfLines={1}>
+                  {interaction.name}
+                </Text>
+                <Text style={styles.small}>
+                  {formatWhen(interaction.startTime)} · {formatDuration(interaction.duration)}
+                </Text>
               </View>
+              {interaction.participants.length > 0 && (
+                <View style={styles.cardParticipants}>
+                  <Text style={styles.small}>Participants:</Text>
+                  {interaction.participants.map((name, ni) => (
+                    <Initials key={`${name}-${ni}`} name={name} />
+                  ))}
+                </View>
+              )}
             </View>
 
             <MiniHeatBar values={interaction.heatValues} />
@@ -74,10 +91,11 @@ export default function ProfileScreen() {
               <Text style={styles.small}>Tense</Text>
             </View>
 
-            {expanded === index && (
+            {expanded === interaction.id && (
               <View style={styles.summary}>
                 <Text style={styles.cardTitle}>Summary</Text>
-                {interaction.summary.map((s, si) => (
+                {interaction.rating !== null && <Text style={styles.small}>Your rating: {interaction.rating}/5</Text>}
+                {interaction.insights.map((s, si) => (
                   <Text key={si} style={styles.small}>
                     {si + 1}. {s}
                   </Text>
@@ -157,6 +175,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 8,
+  },
+  cardHeading: {
+    flexShrink: 1,
+    gap: 2,
   },
   cardTitle: {
     color: Colors.ink,
@@ -172,6 +195,20 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
+    backgroundColor: Colors.slate,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  initials: {
+    color: Colors.white,
+    fontFamily: Fonts.interSemiBold,
+    fontSize: 10,
+  },
+  empty: {
+    color: Colors.mutedForeground,
+    fontFamily: Fonts.inter,
+    fontSize: 14,
+    paddingHorizontal: 4,
   },
   small: {
     color: Colors.ink,

@@ -7,6 +7,7 @@ import Svg, { Path } from 'react-native-svg';
 
 import { PrimaryButton } from '@/components/primary-button';
 import { Colors, Fonts, Type } from '@/constants/theme';
+import { formatDuration } from '@/lib/format';
 import { useSessionStore } from '@/store/session-store';
 
 export default function RateInteractionScreen() {
@@ -29,8 +30,8 @@ export default function RateInteractionScreen() {
     return () => clearTimeout(timer);
   }, [submitted]);
 
-  const handleSubmit = () => {
-    rateLastSession(rating);
+  const handleSubmit = async () => {
+    await rateLastSession(rating);
     setSubmitted(true);
   };
 
@@ -55,10 +56,11 @@ export default function RateInteractionScreen() {
 
         {lastSession && (
           <View style={styles.summary}>
-            <Text style={styles.muted}>
-              Duration: {Math.floor(lastSession.duration / 60)}m {lastSession.duration % 60}s
-            </Text>
-            <Text style={styles.muted}>Participants: {lastSession.participants.join(', ')}</Text>
+            <Text style={styles.muted}>{lastSession.name}</Text>
+            <Text style={styles.muted}>Duration: {formatDuration(lastSession.duration)}</Text>
+            {lastSession.participants.length > 0 && (
+              <Text style={styles.muted}>Participants: {lastSession.participants.join(', ')}</Text>
+            )}
           </View>
         )}
 

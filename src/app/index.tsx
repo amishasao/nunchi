@@ -4,11 +4,14 @@ import { StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
 
 import { Colors, Fonts } from '@/constants/theme';
+import { useSessionStore } from '@/store/session-store';
 
-// Animated wordmark shown after the native splash, then on to Home.
+// Animated wordmark shown after the native splash, then on to Home (or onboarding on first launch).
 export default function Splash() {
   useEffect(() => {
-    const timer = setTimeout(() => router.replace('/home'), 2800);
+    const timer = setTimeout(() => {
+      router.replace(useSessionStore.getState().profile ? '/home' : '/onboarding');
+    }, 2800);
     return () => clearTimeout(timer);
   }, []);
 

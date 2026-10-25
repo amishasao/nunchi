@@ -5,9 +5,10 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 import { Colors } from '@/constants/theme';
+import { useSessionStore } from '@/store/session-store';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -23,12 +24,23 @@ export default function RootLayout() {
     Poppins_400Regular,
     Poppins_600SemiBold,
   });
-  const ready = fontsLoaded || fontError !== null;
+  const [dataLoaded, setDataLoaded] = useState(false);
+  const [dataError, setDataError] = useState<Error | null>(null);
+  const ready = (fontsLoaded || fontError !== null) && (dataLoaded || dataError !== null);
+
+  useEffect(() => {
+    useSessionStore
+      .getState()
+      .hydrate()
+      .then(() => setDataLoaded(true), setDataError);
+  }, []);
 
   useEffect(() => {
     if (ready) SplashScreen.hideAsync();
   }, [ready]);
 
+  // Without the database nothing can be saved, so surface the error instead of carrying on.
+  if (dataError) throw dataError;
   if (!ready) return null;
 
   return (
@@ -36,6 +48,7 @@ export default function RootLayout() {
       <StatusBar style="dark" />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Colors.mist } }}>
         <Stack.Screen name="index" options={{ animation: 'fade' }} />
+        <Stack.Screen name="onboarding" options={{ animation: 'fade' }} />
         <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
       </Stack>
     </>

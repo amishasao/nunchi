@@ -1,12 +1,5 @@
 // Placeholder content carried over from the Figma prototype.
-// Phase 1 replaces this with the signed-in user's real data.
-export const mockUser = {
-  firstName: 'John',
-  fullName: 'John Doe',
-  title: 'Nunchi Practitioner',
-  nextInteraction: 'Today at 3 pm',
-};
-
+// The weekly mood grid is replaced by real insights in Phase 3.
 export const moodLabels = ['calm', 'focused', 'confident', 'intentional'];
 export const dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
@@ -39,55 +32,3 @@ export const recommendedTips: Tip[] = [
 ];
 
 export const intentionOptions = ['Discussion', 'Onboarding', 'Interview', 'Research', 'Coffee Chat'];
-
-export type PastInteraction = {
-  title: string;
-  time: string;
-  participants: string[];
-  avatars: number[]; // require()d image modules
-  heatValues: number[];
-  summary: string[];
-};
-
-export const mockInteractions: PastInteraction[] = [
-  {
-    title: 'Meeting at 3:30 pm',
-    time: 'Today',
-    participants: ['Sarah', 'Mike'],
-    avatars: [require('@/assets/images/avatars/avatar-1.png'), require('@/assets/images/avatars/avatar-2.png')],
-    heatValues: [1, 1, 1, 2, 2, 3, 5, 6, 7, 2, 2, 1, 1],
-    summary: [
-      'Conversation was mostly calm with a brief spike',
-      'Sarah showed increased engagement mid-discussion',
-      'Good overall energy balance',
-    ],
-  },
-  {
-    title: 'Coffee chat at 5:10 pm',
-    time: 'Today',
-    participants: ['Alex', 'Jordan', 'Sam'],
-    avatars: [
-      require('@/assets/images/avatars/avatar-3.png'),
-      require('@/assets/images/avatars/avatar-4.png'),
-      require('@/assets/images/avatars/avatar-5.png'),
-    ],
-    heatValues: [1, 3, 4, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    summary: [
-      'Relaxed conversation throughout',
-      'Early engagement from Alex settled quickly',
-      'Natural rapport building detected',
-    ],
-  },
-  {
-    title: 'Interview at 6:20 pm',
-    time: 'Yesterday',
-    participants: ['Taylor', 'Morgan'],
-    avatars: [require('@/assets/images/avatars/avatar-7.png'), require('@/assets/images/avatars/avatar-6.png')],
-    heatValues: [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 5, 8, 9],
-    summary: [
-      'Tension escalated towards the end',
-      'Consider ending interviews with lighter topics',
-      'Good start but energy shifted negatively',
-    ],
-  },
-];

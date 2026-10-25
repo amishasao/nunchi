@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { ChevronRight, Volume2 } from 'lucide-react-native';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInLeft } from 'react-native-reanimated';
 
@@ -9,8 +9,9 @@ import { ListenOverlay } from '@/components/listen-overlay';
 import { PrimaryButton } from '@/components/primary-button';
 import { RecordingBadge } from '@/components/recording-badge';
 import { Colors, Fonts, HeatColors, Type } from '@/constants/theme';
-import { createInitialGrid, driftGrid, formatElapsed, generateInsights } from '@/lib/mock-heatmap';
-import { useSessionStore } from '@/store/session-store';
+import { summarizeHeat } from '@/lib/heat-timeline';
+import { averageHeat, createInitialGrid, driftGrid, formatElapsed, generateInsights } from '@/lib/mock-heatmap';
+import { elapsedSeconds, useSessionStore } from '@/store/session-store';
 
 const DEFAULT_PARTICIPANTS = ['You', 'Person 2', 'Person 3'];
 
@@ -21,36 +22,50 @@ export default function HeatmapLiveScreen() {
       ? ['You', ...currentActivity.participants]
       : DEFAULT_PARTICIPANTS;
 
-  // Keyed by start time so each new activity gets a fresh grid and timer.
+  // Keyed by activity so each new one gets a fresh grid and timer.
   return (
     <LiveSession
-      key={currentActivity?.startTime ?? 'demo'}
+      key={currentActivity?.id ?? 'demo'}
       participants={participants}
-      isRunning={currentActivity !== null}
+      startTime={currentActivity?.startTime ?? null}
     />
   );
 }
 
-function LiveSession({ participants, isRunning }: { participants: string[]; isRunning: boolean }) {
+function LiveSession({ participants, startTime }: { participants: string[]; startTime: string | null }) {
   const endActivity = useSessionStore((s) => s.endActivity);
+  const isRunning = startTime !== null;
   const [grid, setGrid] = useState(() => createInitialGrid(participants.length));
-  const [elapsed, setElapsed] = useState(0);
+  // Counted from the saved start time, so an activity resumed after a restart keeps its time.
+  const [elapsed, setElapsed] = useState(() => (startTime ? elapsedSeconds(startTime) : 0));
   const [showListen, setShowListen] = useState(false);
+  const [ending, setEnding] = useState(false);
+  const heatSamples = useRef<number[]>([]);
   const insights = useMemo(() => generateInsights(grid, participants), [grid, participants]);
 
   // Tab screens stay mounted, so only tick while an activity is running.
   useEffect(() => {
-    if (!isRunning) return;
-    const timer = setInterval(() => setElapsed((t) => t + 1), 1000);
+    if (!startTime) return;
+    const timer = setInterval(() => setElapsed(elapsedSeconds(startTime)), 1000);
     const drift = setInterval(() => setGrid(driftGrid), 2000);
     return () => {
       clearInterval(timer);
       clearInterval(drift);
     };
-  }, [isRunning]);
+  }, [startTime]);
 
-  const handleEnd = () => {
-    endActivity({ duration: elapsed, insights, participants });
+  // One heat sample per grid update, saved with the activity as its timeline.
+  useEffect(() => {
+    if (isRunning) heatSamples.current.push(averageHeat(grid));
+  }, [grid, isRunning]);
+
+  const handleEnd = async () => {
+    setEnding(true);
+    try {
+      await endActivity({ insights, heatValues: summarizeHeat(heatSamples.current) });
+    } finally {
+      setEnding(false);
+    }
     router.navigate('/rate');
   };
 
@@ -115,7 +130,7 @@ function LiveSession({ participants, isRunning }: { participants: string[]; isRu
       </View>
 
       <View style={styles.center}>
-        <PrimaryButton text="End Activity" onPress={handleEnd} style={styles.endButton} />
+        <PrimaryButton text="End Activity" onPress={handleEnd} disabled={ending} style={styles.endButton} />
       </View>
 
       <ListenOverlay visible={showListen} onClose={() => setShowListen(false)} />

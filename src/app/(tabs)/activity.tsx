@@ -4,12 +4,16 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 
 import { Checkbox } from '@/components/checkbox';
 import { PrimaryButton } from '@/components/primary-button';
+import { SettingsOverlay } from '@/components/settings-overlay';
 import { Colors, Fonts, Type } from '@/constants/theme';
 import { intentionOptions } from '@/data/mock';
 import { useSessionStore } from '@/store/session-store';
 
 export default function StartActivityScreen() {
   const startActivity = useSessionStore((s) => s.startActivity);
+  const hasConsent = useSessionStore((s) => s.profile?.recordingConsent ?? false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [starting, setStarting] = useState(false);
   const [activityName, setActivityName] = useState('');
   const [selectedIntentions, setSelectedIntentions] = useState<string[]>([]);
   const [intentionOther, setIntentionOther] = useState('');
@@ -24,17 +28,21 @@ export default function StartActivityScreen() {
 
   const isValid = activityName.trim() !== '' && (selectedIntentions.length > 0 || intentionOther.trim() !== '');
 
-  const handleStart = () => {
-    if (!isValid) return;
-    startActivity({
-      name: activityName.trim(),
-      intentions: [...selectedIntentions, ...(intentionOther.trim() ? [intentionOther.trim()] : [])],
-      participants: participants
-        .split(',')
-        .map((p) => p.trim())
-        .filter(Boolean),
-      startTime: new Date().toISOString(),
-    });
+  const handleStart = async () => {
+    if (!isValid || !hasConsent) return;
+    setStarting(true);
+    try {
+      await startActivity({
+        name: activityName.trim(),
+        intentions: [...selectedIntentions, ...(intentionOther.trim() ? [intentionOther.trim()] : [])],
+        participants: participants
+          .split(',')
+          .map((p) => p.trim())
+          .filter(Boolean),
+      });
+    } finally {
+      setStarting(false);
+    }
     router.navigate('/heatmap/live');
   };
 
@@ -111,8 +119,18 @@ export default function StartActivityScreen() {
       </View>
 
       <View style={styles.center}>
-        <PrimaryButton text="Start Activity" onPress={handleStart} disabled={!isValid} />
+        <PrimaryButton text="Start Activity" onPress={handleStart} disabled={!isValid || !hasConsent || starting} />
+        {!hasConsent && (
+          <Text style={styles.consentNotice}>
+            Nunchi needs your permission to record before an activity can start.{' '}
+            <Text accessibilityRole="link" onPress={() => setShowSettings(true)} style={styles.consentLink}>
+              Open Settings
+            </Text>
+          </Text>
+        )}
       </View>
+
+      <SettingsOverlay visible={showSettings} onClose={() => setShowSettings(false)} />
     </ScrollView>
   );
 }
@@ -172,6 +190,19 @@ const styles = StyleSheet.create({
   },
   center: {
     alignItems: 'center',
+    gap: 12,
     paddingTop: 8,
+  },
+  consentNotice: {
+    color: Colors.mutedForeground,
+    fontFamily: Fonts.inter,
+    fontSize: 13,
+    lineHeight: 19,
+    textAlign: 'center',
+  },
+  consentLink: {
+    color: Colors.ink,
+    fontFamily: Fonts.interSemiBold,
+    textDecorationLine: 'underline',
   },
 });

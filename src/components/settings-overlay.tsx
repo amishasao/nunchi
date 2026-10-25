@@ -6,7 +6,7 @@ import { Overlay } from '@/components/overlay';
 import { PrimaryButton } from '@/components/primary-button';
 import { RangeSlider } from '@/components/range-slider';
 import { Colors, Fonts } from '@/constants/theme';
-import { useSessionStore } from '@/store/session-store';
+import { DEFAULT_RECORDING_RANGE, useSessionStore } from '@/store/session-store';
 
 export function SettingsOverlay({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   return (
@@ -19,11 +19,13 @@ export function SettingsOverlay({ visible, onClose }: { visible: boolean; onClos
 
 function SettingsForm({ onClose }: { onClose: () => void }) {
   const saveSettings = useSessionStore((s) => s.saveSettings);
-  const [range, setRange] = useState(() => useSessionStore.getState().recordingRange);
-  const [agreed, setAgreed] = useState(() => useSessionStore.getState().recordingConsent);
+  const [range, setRange] = useState(
+    () => useSessionStore.getState().profile?.recordingRange ?? DEFAULT_RECORDING_RANGE,
+  );
+  const [agreed, setAgreed] = useState(() => useSessionStore.getState().profile?.recordingConsent ?? false);
 
-  const handleSave = () => {
-    saveSettings({ recordingRange: range, recordingConsent: agreed });
+  const handleSave = async () => {
+    await saveSettings({ recordingRange: range, recordingConsent: agreed });
     onClose();
   };
 
